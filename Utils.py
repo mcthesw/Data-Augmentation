@@ -44,7 +44,7 @@ def read_masks_from_json(file_path: str) -> dict:
         "h":[mask7,mask8,mask9,],
     }
     :param file_path: 给出的json文件路径
-    :return: 一个包含了该json所有mask的字典，其中mask是ndarray
+    :return: 一个包含了该json所有mask的字典，其中mask包含了它的点集
     """
     types = set()
     with open(file_path, mode="r") as file:
@@ -58,7 +58,7 @@ def read_masks_from_json(file_path: str) -> dict:
     polygons = json_file["shapes"]
     shape = (json_file["imageHeight"], json_file["imageWidth"])
     for i in polygons:
-        mask = get_mask(i["points"], shape)
+        mask = i["points"]
         # i["label"][0]代表类型，可能是"n","l"之类的
         result[i["label"][0]].append(mask)
     return result

@@ -1,11 +1,10 @@
-import os
 import argparse
-import re
+import os
 import random
+import re
 
-import Utils
-from DataObj import ImageData
 from DataAug import aug_data
+from DataObj import ImageData
 
 VAL_RATE = 1 / 8
 AUG = True
@@ -40,7 +39,10 @@ for i in picFiles:
 
 if AUG:
     print("开始数据增强")
-    tmp = aug_data(data_file_list[0])
+    AUG_list = []
+    for i in data_file_list:
+        AUG_list.append(aug_data(i))
+    data_file_list += AUG_list
 
 for i in data_file_list:
     print(f"正在转换文件:\n{str(i)}")
@@ -51,5 +53,5 @@ results = os.listdir(DataTarget)
 VALs = random.sample(results, int(len(results) * VAL_RATE))
 with open(os.path.join(DataTarget, "VALs.txt"), mode="w") as val_file:
     val_file.write(str([i for i in VALs]))
-print(f"vals.txt 已经生成在了 {DataTarget} 下")
+print(f"VALs.txt 已经生成在了 {DataTarget} 下")
 print("所有处理均已完成")

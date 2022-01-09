@@ -2,7 +2,7 @@ from os import path
 import os
 import numpy
 
-from Utils import dump_mask, get_image, read_masks_from_json, write_image
+from Utils import dump_mask, get_image, read_masks_from_json, write_image, get_mask
 
 
 class ImageData:
@@ -40,11 +40,10 @@ class ImageData:
             os.makedirs(mask_folder_path)
             for index in range(len(self.masks[mask_type])):
                 # 导出mask文件
-                cur_mask = self.masks[mask_type][index]
+                cur_mask = get_mask(self.masks[mask_type][index], self.shape)
                 cur_mask_name = str(index)
                 dump_mask(mask_folder_path, cur_mask_name, cur_mask)
             # 导出对应图片
-            image_name = self.name + ".png"
             image_path = path.join(target_path, folder_name, "images", self.name)
             os.makedirs(image_path)
             write_image(image_path, self.name, self.image)
