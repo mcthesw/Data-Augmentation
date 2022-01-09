@@ -18,7 +18,7 @@ print("读取文件成功")
 
 # 获取所有图片
 file: str
-picFiles = [file for file in files if re.fullmatch(r".*\.(jpg|png)$", i, re.I)]
+picFiles = [file for file in files if re.fullmatch(r".*\.(jpg|png)$", file, re.I)]
 print("读取所有源图片成功：")
 print("\n".join(picFiles))
 if int(len(picFiles)*VAL_RATE) < 1:
@@ -31,16 +31,17 @@ except FileExistsError:
     input("文件夹已存在，请删除Target文件夹，按任意键结束程序")
     exit()
 
-source_file_list = []
+data_file_list = []
 for i in picFiles:
     print(f"正在转换文件:{i}")
-    source_file_list.append(ImageData.create_from_file(i, DataSource))
-for i in source_file_list:
+    data_file_list.append(ImageData.create_from_file(i, DataSource))
+for i in data_file_list:
     i.dump_masks_and_image(DataTarget)
 
 print(f"转换全部成功，接下来进行随机选择VAL，你的VAL_RATE为{VAL_RATE}")
-vals = random.sample(picFiles, int(len(picFiles) * VAL_RATE))
-with open(os.path.join(DataTarget, "vals.txt"), mode="w") as val_file:
-    val_file.write(str([i[:-4] for i in vals]))
+results = os.listdir(DataTarget)
+VALs = random.sample(results, int(len(results) * VAL_RATE))
+with open(os.path.join(DataTarget, "VALs.txt"), mode="w") as val_file:
+    val_file.write(str([i for i in VALs]))
 print(f"vals.txt 已经生成在了 {DataTarget} 下")
 print("所有处理均已完成")

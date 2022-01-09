@@ -26,8 +26,8 @@ def get_image(file_path: str) -> numpy.ndarray:
     return cv2.imread(file_path)
 
 
-def write_image(file_path: str, image: numpy.ndarray):
-    cv2.imwrite(file_path, image)
+def write_image(file_path: str, file_name: str, image: numpy.ndarray):
+    cv2.imwrite(path.join(file_path, file_name + ".png"), image)
 
 
 def read_masks_from_json(file_path: str) -> dict:

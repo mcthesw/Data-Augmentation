@@ -32,7 +32,7 @@ class ImageData:
         """把图片和mask按照格式导出到target_path"""
         for mask_type in self.types:
             # 把mask中的各个类别分别输出
-            folder_name = f"[{type}]" + self.name
+            folder_name = f"[{mask_type}]" + self.name
             mask_folder_path = path.join(target_path, folder_name, "masks")
             os.makedirs(mask_folder_path)
             for index in range(len(self.masks[mask_type])):
@@ -42,9 +42,9 @@ class ImageData:
                 dump_mask(mask_folder_path, cur_mask_name, cur_mask)
             # 导出对应图片
             image_name = self.name + ".png"
-            image_path = path.join(target_path, folder_name, "images", image_name)
+            image_path = path.join(target_path, folder_name, "images", self.name)
             os.makedirs(image_path)
-            write_image(image_path, self.image)
+            write_image(image_path, self.name, self.image)
 
     def __str__(self) -> str:
         describe = f"Name:{self.name} \nShape:{self.shape} \nTypes:{self.types}"
