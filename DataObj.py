@@ -1,71 +1,51 @@
 from os import path
 import os
-import json
-import PicUtils
-import shutil
+from Utils import *
 
 
-class SourceFile:
-    def __init__(self, name: str, source_path: str, target_path: str):
-        self.name = name[:-4]  # 这个是用于保存的ID
-        self.path = path.join(source_path, name)  # 该文件的完整路径
-        self.target_path = target_path
-        self.json_file = path.join(source_path, name[:-4] + ".json")
-        """self.groups的结构应当如下,其中mask是一张可以被导出的mask二值图片\n
-        (类型numpy.ndarray)\n
-            {
-                "n":[mask1,mask2,mask3,],
-                "l":[mask4,mask5,mask6,],
-                 .....
-            }
-        """
+class ImageData:
+    @classmethod
+    def create_from_file(cls, file_name: str, source_path: str):
+        file_path = path.join(source_path, file_name)  # 该文件的完整路径
+        json_file = path.join(source_path, file_name[:-4] + ".json")
+        image = get_image(file_path)
+        masks = read_masks_from_json(json_file)
+        return cls(file_name[:-4], image, masks)
+
+    def __init__(self, file_name: str, image: numpy.ndarray, masks: dict):
+        self.name = file_name  # 这个是用于保存的ID
+        self.image = image
+        self.masks = masks
 
     @property
     def shape(self) -> tuple:
-        with open(self.json_file, mode="r") as file:
-            tmp = json.loads(file.read())
-        return tmp["imageHeight"], tmp["imageWidth"]
+        return self.image.shape
 
     @property
     def types(self) -> set:
         types = set()
-        with open(self.json_file, mode="r") as file:
-            tmp = json.loads(file.read())
-        for i in tmp["shapes"]:
-            types.add(i["label"][0])  # 只有第一个字母代表类型
+        for i in self.masks.keys():
+            types.add(i)
         return types
 
-    @property
-    def groups(self) -> dict:
-        result = dict()
-        for i in self.types:
-            result[i] = []
-        with open(self.json_file, mode="r") as file:
-            tmp = json.loads(file.read())
-        tmp = tmp["shapes"]
-        for i in tmp:
-            mask = PicUtils.get_mask(i["points"], self.shape)
-            # i["label"][0]代表类型，可能是"n","l"之类的
-            result[i["label"][0]].append(mask)
-        return result
-
-    def dump_masks(self):
-        for type in self.types:
-            # 创建对应文件夹
+    def dump_masks_and_image(self, target_path: str):
+        """把图片和mask按照格式导出到target_path"""
+        for mask_type in self.types:
+            # 把mask中的各个类别分别输出
             folder_name = f"[{type}]" + self.name
-            mask_folder_path = path.join(self.target_path, folder_name, "masks")
+            mask_folder_path = path.join(target_path, folder_name, "masks")
             os.makedirs(mask_folder_path)
-            # 创建mask文件
-            for index in range(len(self.groups[type])):
-                mask = self.groups[type][index]
-                file_name = str(index) + ".png"
-                PicUtils.dump_mask(mask_folder_path, file_name, mask)
-            # 复制源图片
-            source_pic_path = path.join(self.target_path, folder_name, "images")
-            os.makedirs(source_pic_path)
-            target_path = path.join(source_pic_path, folder_name + ".png")
-            shutil.copy(self.path, target_path)
+            for index in range(len(self.masks[mask_type])):
+                # 导出mask文件
+                cur_mask = self.masks[mask_type][index]
+                cur_mask_name = str(index) + ".png"
+                dump_mask(mask_folder_path, cur_mask_name, cur_mask)
+            # 导出对应图片
+            image_name = self.name + ".png"
+            image_path = path.join(target_path, folder_name, "images", image_name)
+            os.makedirs(image_path)
+            write_image(image_path, self.image)
 
     def __str__(self) -> str:
-        describe = f"Name:{self.name} \nLocation:{self.path} \nShape:{self.shape} \nTypes:{self.types}"
+        describe = f"Name:{self.name} \nShape:{self.shape} \nTypes:{self.types}"
         return describe

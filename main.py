@@ -2,7 +2,7 @@ import os
 import argparse
 import re
 import random
-import DataObj
+from DataObj import ImageData
 
 VAL_RATE = 1 / 8
 
@@ -34,9 +34,9 @@ except FileExistsError:
 source_file_list = []
 for i in picFiles:
     print(f"正在转换文件:{i}")
-    source_file_list.append(DataObj.SourceFile(i, DataSource, DataTarget))
+    source_file_list.append(ImageData.create_from_file(i, DataSource))
 for i in source_file_list:
-    i.dump_masks()
+    i.dump_masks_and_image(DataTarget)
 
 print(f"转换全部成功，接下来进行随机选择VAL，你的VAL_RATE为{VAL_RATE}")
 vals = random.sample(picFiles, int(len(picFiles) * VAL_RATE))
