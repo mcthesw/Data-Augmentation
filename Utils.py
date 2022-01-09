@@ -11,7 +11,7 @@ def get_mask(points: list, shape: tuple) -> numpy.ndarray:
     :param shape:图片的长与宽
     :return: 使用ndarray储存的三通道uint8图片
     """
-    blank_mask = numpy.zeros((shape[0], shape[1]))
+    blank_mask = numpy.zeros((shape[0], shape[1]), dtype="uint8")
     points = numpy.array(points, "int32")
     mask = cv2.fillConvexPoly(blank_mask, points, (255, 255, 255))
     return mask
@@ -62,3 +62,4 @@ def read_masks_from_json(file_path: str) -> dict:
         # i["label"][0]代表类型，可能是"n","l"之类的
         result[i["label"][0]].append(mask)
     return result
+

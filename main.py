@@ -2,7 +2,10 @@ import os
 import argparse
 import re
 import random
+
+import Utils
 from DataObj import ImageData
+from DataAug import aug_data
 
 VAL_RATE = 1 / 8
 AUG = True
@@ -37,6 +40,7 @@ for i in picFiles:
 
 if AUG:
     print("开始数据增强")
+    tmp = aug_data(data_file_list[0])
 
 for i in data_file_list:
     print(f"正在转换文件:\n{str(i)}")

@@ -1,6 +1,8 @@
 from os import path
 import os
-from Utils import *
+import numpy
+
+from Utils import dump_mask, get_image, read_masks_from_json, write_image
 
 
 class ImageData:
