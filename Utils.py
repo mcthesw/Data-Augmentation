@@ -6,8 +6,8 @@ from os import path
 
 def get_mask(points: list, shape: tuple) -> numpy.ndarray:
     """
-
-    :param points:
+    通过点和图片大小生成对应的mask图片
+    :param points:多边形mask的点的信息
     :param shape:图片的长与宽
     :return: 使用ndarray储存的三通道uint8图片
     """
@@ -17,17 +17,22 @@ def get_mask(points: list, shape: tuple) -> numpy.ndarray:
     return mask
 
 
-def dump_mask(out_path: str, name, mask: numpy.ndarray):
-    cv2.imwrite(path.join(out_path, name), mask)
-    return
+def dump_mask(out_path: str, file_name: str, mask: numpy.ndarray):
+    """
+    指定输出路径和文件名来导出mask（不需要后缀名）
+    """
+    cv2.imwrite(path.join(out_path, file_name + ".png"), mask)
 
 
 def get_image(file_path: str) -> numpy.ndarray:
     return cv2.imread(file_path)
 
 
-def write_image(file_path: str, file_name: str, image: numpy.ndarray):
-    cv2.imwrite(path.join(file_path, file_name + ".png"), image)
+def write_image(out_path: str, file_name: str, image: numpy.ndarray):
+    """
+    指定输出路径和文件名来导出图片（不需要后缀名）
+    """
+    cv2.imwrite(path.join(out_path, file_name + ".png"), image)
 
 
 def read_masks_from_json(file_path: str) -> dict:

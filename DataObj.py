@@ -6,6 +6,7 @@ from Utils import *
 class ImageData:
     @classmethod
     def create_from_file(cls, file_name: str, source_path: str):
+        """通过文件名和路径来获取数据，需要图片和同名json"""
         file_path = path.join(source_path, file_name)  # 该文件的完整路径
         json_file = path.join(source_path, file_name[:-4] + ".json")
         image = get_image(file_path)
@@ -38,7 +39,7 @@ class ImageData:
             for index in range(len(self.masks[mask_type])):
                 # 导出mask文件
                 cur_mask = self.masks[mask_type][index]
-                cur_mask_name = str(index) + ".png"
+                cur_mask_name = str(index)
                 dump_mask(mask_folder_path, cur_mask_name, cur_mask)
             # 导出对应图片
             image_name = self.name + ".png"
