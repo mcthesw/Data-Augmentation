@@ -48,5 +48,5 @@ class ImageData:
             write_image(image_path, self.name, self.image)
 
     def __str__(self) -> str:
-        describe = f"Name:{self.name} \nShape:{self.shape} \nTypes:{self.types}"
+        describe = f"Name:{self.name} Shape:{self.shape} Types:{self.types}"
         return describe

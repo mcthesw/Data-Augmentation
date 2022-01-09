@@ -5,7 +5,7 @@ import random
 from DataObj import ImageData
 
 VAL_RATE = 1 / 8
-
+AUG = True
 
 # 通过命令行参数得到数据源路径
 parser = argparse.ArgumentParser()
@@ -33,9 +33,13 @@ except FileExistsError:
 
 data_file_list = []
 for i in picFiles:
-    print(f"正在转换文件:{i}")
     data_file_list.append(ImageData.create_from_file(i, DataSource))
+
+if AUG:
+    print("开始数据增强")
+
 for i in data_file_list:
+    print(f"正在转换文件:\n{str(i)}")
     i.dump_masks_and_image(DataTarget)
 
 print(f"转换全部成功，接下来进行随机选择VAL，你的VAL_RATE为{VAL_RATE}")
