@@ -11,8 +11,6 @@ class SourceFile:
         self.path = path.join(source_path, name)  # 该文件的完整路径
         self.target_path = target_path
         self.json_file = path.join(source_path, name[:-4] + ".json")
-        self.types = self.get_types()
-        self.groups = self.get_groups()
         """self.groups的结构应当如下,其中mask是一张可以被导出的mask二值图片\n
         (类型numpy.ndarray)\n
             {
@@ -28,7 +26,8 @@ class SourceFile:
             tmp = json.loads(file.read())
         return tmp["imageHeight"], tmp["imageWidth"]
 
-    def get_types(self) -> set:
+    @property
+    def types(self) -> set:
         types = set()
         with open(self.json_file, mode="r") as file:
             tmp = json.loads(file.read())
@@ -36,7 +35,8 @@ class SourceFile:
             types.add(i["label"][0])  # 只有第一个字母代表类型
         return types
 
-    def get_groups(self) -> dict:
+    @property
+    def groups(self) -> dict:
         result = dict()
         for i in self.types:
             result[i] = []

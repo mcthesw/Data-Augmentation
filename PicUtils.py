@@ -3,7 +3,7 @@ import numpy
 from os import path
 
 
-def get_mask(points: list, shape: list) -> numpy.ndarray:
+def get_mask(points: list, shape: tuple) -> numpy.ndarray:
     blankMask = numpy.zeros((shape[0], shape[1]))
     points = numpy.array(points, "int32")
     mask = cv2.fillConvexPoly(blankMask, points, (255, 255, 255))
