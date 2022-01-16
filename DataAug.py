@@ -7,8 +7,8 @@ import DataObj
 def aug_data(data: DataObj.ImageData):
     aug = get_aug_seq()
     segmaps_aug = dict()
-    for cur_type in data.masks.keys():
-        cur_masks = [ia.Polygon(mask) for mask in data.masks[cur_type]]
+    for cur_type in data.mask_polygons.keys():
+        cur_masks = [ia.Polygon(mask) for mask in data.mask_polygons[cur_type]]
         images_aug, tmp_segmaps_aug = aug(image=data.image, polygons=cur_masks)
         segmaps_aug[cur_type] = [i.coords for i in tmp_segmaps_aug]  # 把多边形转回坐标
     assert images_aug is not None

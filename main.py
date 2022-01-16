@@ -7,7 +7,8 @@ from DataAug import aug_data
 from DataObj import ImageData
 
 VAL_RATE = 1 / 8
-AUG = True
+AUG = False
+PATCH = True
 
 # 通过命令行参数得到数据源路径
 parser = argparse.ArgumentParser()
@@ -38,14 +39,19 @@ for i in picFiles:
     data_file_list.append(ImageData.create_from_file(i, DataSource))
 
 if AUG:
-    print("开始数据增强")
+    print("开始进行图像处理数据增强")
     AUG_list = []
     for i in data_file_list:
         AUG_list.append(aug_data(i))
     data_file_list += AUG_list
+if PATCH:
+    print("开始进行贴图数据增强")
+    AUG_list = []
+    # TODO:把贴图数据增强做好
 
 for i in data_file_list:
     print(f"正在转换文件:\n{str(i)}")
+    i.convert_polygons_to_images()
     i.dump_masks_and_image(DataTarget)
 
 print(f"转换全部成功，接下来进行随机选择VAL，你的VAL_RATE为{VAL_RATE}")
