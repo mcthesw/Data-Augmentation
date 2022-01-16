@@ -3,6 +3,7 @@
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$">
       <excludeFolder url="file://$MODULE_DIR$/DataSource" />
+      <excludeFolder url="file://$MODULE_DIR$/Target" />
     </content>
     <orderEntry type="jdk" jdkName="Python 3.7 (DataConvert)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
