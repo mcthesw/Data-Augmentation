@@ -87,7 +87,7 @@ class Patch:
                 cur_patch_masks[mask_type] = list()
                 for mask in patch_masks[mask_type]:
                     cur_patch_masks[mask_type].append(mask[i])
-            results.append(cls(cur_patch_image, cur_patch_masks))
+            results.append(Patch(cur_patch_image, cur_patch_masks))
         return results
 
     def __init__(self, image: numpy.ndarray, mask_images: dict):
@@ -114,14 +114,14 @@ class Patch:
         """
         for mask_type in self.mask_images.keys():
             for mask_image in self.mask_images[mask_type]:
-                x, y, z = mask_image.shape
-                white = tuple([255 for _ in range(z)])
+                x, y = mask_image.shape
+                white = 255
                 for cur_x in range(x):
-                    if (mask_image[cur_x, y] == white or
+                    if (mask_image[cur_x, y - 1] == white or  # Shape中的x和y是从1开始的，所以需要-1
                             mask_image[cur_x, 0] == white):
                         return False
                 for cur_y in range(y):
-                    if (mask_image[x, cur_y] == white or
+                    if (mask_image[x - 1, cur_y] == white or
                             mask_image[0, cur_y] == white):
                         return False
         return True
@@ -157,10 +157,9 @@ class Patch:
 
     def drop_empty_masks(self):
         """去掉空的mask"""
-        # TODO: Drop之后总是清除了所有的mask，需要解决
         empty = numpy.zeros(self.shape, dtype="uint8")
         for mask_type in self.types:
-            self.mask_images[mask_type] = [mask for mask in self.mask_images[mask_type] if not (mask == empty).all]
+            self.mask_images[mask_type] = [mask for mask in self.mask_images[mask_type] if not (mask == empty).all()]
 
 
 def split_img(image: numpy.ndarray, patch_size: tuple) -> list:

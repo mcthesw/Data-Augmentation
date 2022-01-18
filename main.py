@@ -7,11 +7,13 @@ from typing import List
 from DataAug import aug_data
 from DataObj import ImageData, Patch
 
+# 配置部分
 VAL_RATE = 1 / 8
 AUG = False
 PATCH = True
-PATCH_SIZE = (64, 128)
+PATCH_SIZE = (128, 128)
 PATCH_AMOUNT = 1
+# 配置部分结束
 
 # 通过命令行参数得到数据源路径
 parser = argparse.ArgumentParser()
@@ -58,7 +60,6 @@ if PATCH:
         for patch in cur_patches:
             # 如果未包含物体或者遇到了边界，那么抛弃
             if not patch.check_include_target() or not patch.check_boundary():
-                # if not patch.check_boundary():
                 continue
             patches.append(patch)
     for data_file in data_file_list:
