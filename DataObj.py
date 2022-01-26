@@ -20,7 +20,7 @@ class ImageData:
 
     def __init__(self, file_name: str, image: numpy.ndarray, mask_polygons: dict):
         # noinspection PyTypeChecker
-        self.mask_image: dict = None
+        self.mask_images: dict = None
         self.name = file_name  # 这个是用于保存的ID
         self.image = image
         self.mask_polygons = mask_polygons
@@ -29,35 +29,73 @@ class ImageData:
     @property
     def types(self) -> set:
         types = set()
-        for i in self.mask_polygons.keys():
-            types.add(i)
+        if self.mask_polygons is not None:
+            for i in self.mask_polygons.keys():
+                types.add(i)
+        else:
+            for i in self.mask_images.keys():
+                types.add(i)
         return types
 
     def convert_polygons_to_images(self):
-        self.mask_image = dict()
+        self.mask_images = dict()
         for mask_type in self.types:
             cur_masks = []
             for mask_polygon in self.mask_polygons[mask_type]:
                 cur_masks.append(get_mask(mask_polygon, self.shape))
-            self.mask_image[mask_type] = cur_masks
+            self.mask_images[mask_type] = cur_masks
 
     def dump_masks_and_image(self, target_path: str):
         """把图片和mask按照格式导出到target_path"""
-        assert self.mask_image is not None
+        assert self.mask_images is not None
         for mask_type in self.types:
             # 把mask中的各个类别分别输出
             folder_name = f"[{mask_type}]" + self.name
             mask_folder_path = path.join(target_path, folder_name, "masks")
             os.makedirs(mask_folder_path)
-            for index in range(len(self.mask_image[mask_type])):
+            for index in range(len(self.mask_images[mask_type])):
                 # 导出mask文件
-                cur_mask = self.mask_image[mask_type][index]
+                cur_mask = self.mask_images[mask_type][index]
                 cur_mask_name = str(index)
                 dump_mask(mask_folder_path, cur_mask_name, cur_mask)
             # 导出对应图片
             image_path = path.join(target_path, folder_name, "images", self.name)
             os.makedirs(image_path)
             write_image(image_path, self.name, self.image)
+
+    def drop_empty_masks(self):
+        """去掉空的mask"""
+        for mask_type in self.types:
+            self.mask_images[mask_type] = [mask for mask in self.mask_images[mask_type] if not (mask == 0).all()]
+
+    def split(self, size: tuple):
+        # 因为生成patch时需要mask，所以不能为空
+        assert self.mask_images is not None
+        results = []
+        # 切开原始图像
+        patch_images = split_img(self.image, size)
+        # 把原始mask图片也切开
+        patch_masks = dict()
+        for mask_type in self.types:
+            patch_masks[mask_type] = list()
+            for origin_mask_image in self.mask_images[mask_type]:
+                patch_masks[mask_type].append(split_mask(origin_mask_image, size))
+        # 按顺序进行组合，放入Patch对象
+        cnt = 1
+        for i in range(len(patch_images)):
+            cur_patch_image = patch_images[i]
+            cur_patch_masks = dict()
+            for mask_type in self.types:
+                cur_patch_masks[mask_type] = list()
+                for mask in patch_masks[mask_type]:
+                    cur_patch_masks[mask_type].append(mask[i])
+            # noinspection PyTypeChecker
+            new_image_data = ImageData(self.name + f"_split[{cnt}]", cur_patch_image, None)
+            new_image_data.mask_images = cur_patch_masks
+            new_image_data.drop_empty_masks()
+            results.append(new_image_data)
+            cnt += 1
+        return results
 
     def __str__(self) -> str:
         describe = f"Name:{self.name} Shape:{self.shape} Types:{self.types}"
@@ -69,7 +107,7 @@ class Patch:
     @classmethod
     def create_from_image_data(cls, data: ImageData, patch_size: tuple = (128, 128)) -> list:
         # 因为生成patch时需要mask，所以不能为空
-        assert data.mask_image is not None
+        assert data.mask_images is not None
         results = []
         # 切开原始图像
         patch_images = split_img(data.image, patch_size)
@@ -77,7 +115,7 @@ class Patch:
         patch_masks = dict()
         for mask_type in data.types:
             patch_masks[mask_type] = list()
-            for origin_mask_image in data.mask_image[mask_type]:
+            for origin_mask_image in data.mask_images[mask_type]:
                 patch_masks[mask_type].append(split_mask(origin_mask_image, patch_size))
         # 按顺序进行组合，放入Patch对象
         for i in range(len(patch_images)):
@@ -128,7 +166,7 @@ class Patch:
 
     def apply_to_image_data(self, data: ImageData, pos: tuple = None) -> ImageData:
         # 因为需要把新的mask覆盖到旧的上面，所以旧的必须存在
-        assert data.mask_image is not None
+        assert data.mask_images is not None
         # TODO:需要解决命名冲突
         # 需要使用copy来解决引用问题
         new_data = ImageData(data.name + "_patch" + str(random.randint(10000, 99999)), data.image.copy(),
@@ -149,37 +187,38 @@ class Patch:
                 self.mask_images[mask_type][mask_index] = cur_big_mask
         # 把mask也贴到原图上
         for mask_type in self.mask_images.keys():
-            if mask_type not in new_data.mask_image.keys():
-                new_data.mask_image[mask_type] = self.mask_images[mask_type]
+            if mask_type not in new_data.mask_images.keys():
+                new_data.mask_images[mask_type] = self.mask_images[mask_type]
             else:
-                new_data.mask_image[mask_type] += self.mask_images[mask_type]
+                new_data.mask_images[mask_type] += self.mask_images[mask_type]
         return new_data
 
     def drop_empty_masks(self):
         """去掉空的mask"""
+        # TODO: 检查下面的语句是否正确
         empty = numpy.zeros(self.shape, dtype="uint8")
         for mask_type in self.types:
             self.mask_images[mask_type] = [mask for mask in self.mask_images[mask_type] if not (mask == empty).all()]
 
 
-def split_img(image: numpy.ndarray, patch_size: tuple) -> list:
+def split_img(image: numpy.ndarray, size: tuple) -> list:
     patches = []
-    for x in range(0, image.shape[0], patch_size[0]):
-        for y in range(0, image.shape[1], patch_size[1]):
+    for x in range(0, image.shape[0], size[0]):
+        for y in range(0, image.shape[1], size[1]):
             patches.append(image[
-                           x:x + patch_size[0],
-                           y:y + patch_size[1],
+                           x:x + size[0],
+                           y:y + size[1],
                            :
                            ])
     return patches
 
 
-def split_mask(mask: numpy.ndarray, patch_size: tuple) -> list:
+def split_mask(mask: numpy.ndarray, size: tuple) -> list:
     patches = []
-    for x in range(0, mask.shape[0], patch_size[0]):
-        for y in range(0, mask.shape[1], patch_size[1]):
+    for x in range(0, mask.shape[0], size[0]):
+        for y in range(0, mask.shape[1], size[1]):
             patches.append(mask[
-                           x:x + patch_size[0],
-                           y:y + patch_size[1]
+                           x:x + size[0],
+                           y:y + size[1]
                            ])
     return patches
