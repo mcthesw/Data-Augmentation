@@ -8,9 +8,9 @@ from DataObj import ImageData, Patch
 
 # 配置部分
 # 注意：此处输入高和长的格式应为(高度, 长度)
-MODE = "AUG"  # TODO:根据该项来输出 mode可为AUG CreatePatch
+MODE = "AUG"  # TODO:根据该项来输出 mode可为AUG,CreatePatch
 VAL_RATE = 1 / 8  # 随机产生的VAL列表应当占总文件的比例
-AUG = False  # 是否进行数据增强
+AUG = True  # 是否进行数据增强
 SPLIT = (384, 512)  # 将图片分割的大小，如果填写0或False则不进行分割
 PATCH = False  # 是否进行贴图
 PATCH_SIZE = (128, 128)  # Patch的长宽
@@ -39,15 +39,13 @@ except FileExistsError:
 data_file_list = []
 for i in picFiles:
     data_file_list.append(ImageData.create_from_file(i, DataSource))
-for i in data_file_list:
-    i.convert_polygons_to_images()
 
 if AUG:
     print("开始进行图像处理数据增强")
     AUG_list = []
     for i in data_file_list:
-        AUG_list.append(aug_data(i))
-    data_file_list += AUG_list
+        AUG_list += aug_data(i)
+    data_file_list = AUG_list
 
 if SPLIT:
     print("开始进行图像分割数据增强")
@@ -81,7 +79,7 @@ if PATCH:
         for i in cur_patches:
             tmp = i.apply_to_image_data(data_file)
             AUG_list.append(tmp)
-    data_file_list += AUG_list
+    data_file_list = AUG_list
 
 if int(len(data_file_list) * VAL_RATE) < 1:
     print("样本数量不足，或者VAL_RATE设置太小(该提示不会影响程序运行)")

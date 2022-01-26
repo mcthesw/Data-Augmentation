@@ -1,7 +1,8 @@
-import cv2
-import numpy
 import json
 from os import path
+
+import cv2
+import numpy
 
 
 def get_mask(points: list, shape: tuple) -> numpy.ndarray:
@@ -63,3 +64,9 @@ def read_masks_from_json(file_path: str) -> dict:
         result[i["label"][0]].append(mask)
     return result
 
+
+def counter():
+    count = 1
+    while True:
+        yield count
+        count += 1

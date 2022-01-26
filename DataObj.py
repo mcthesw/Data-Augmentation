@@ -1,12 +1,12 @@
 import os
-import random
 from os import path
 from random import randint
 
 import numpy
 
-from Utils import dump_mask, get_image, read_masks_from_json, write_image, get_mask
+from Utils import dump_mask, get_image, read_masks_from_json, write_image, get_mask, counter
 
+patch_counter = counter()
 
 class ImageData:
     @classmethod
@@ -25,6 +25,8 @@ class ImageData:
         self.image = image
         self.mask_polygons = mask_polygons
         self.shape: tuple = self.image.shape
+        if mask_polygons is not None:
+            self.convert_polygons_to_images()
 
     @property
     def types(self) -> set:
@@ -116,7 +118,8 @@ class Patch:
         for mask_type in data.types:
             patch_masks[mask_type] = list()
             for origin_mask_image in data.mask_images[mask_type]:
-                patch_masks[mask_type].append(split_mask(origin_mask_image, patch_size))
+                new_masks = split_mask(origin_mask_image, patch_size)
+                patch_masks[mask_type].append(new_masks)
         # 按顺序进行组合，放入Patch对象
         for i in range(len(patch_images)):
             cur_patch_image = patch_images[i]
@@ -167,10 +170,9 @@ class Patch:
     def apply_to_image_data(self, data: ImageData, pos: tuple = None) -> ImageData:
         # 因为需要把新的mask覆盖到旧的上面，所以旧的必须存在
         assert data.mask_images is not None
-        # TODO:需要解决命名冲突
         # 需要使用copy来解决引用问题
-        new_data = ImageData(data.name + "_patch" + str(random.randint(10000, 99999)), data.image.copy(),
-                             data.mask_polygons.copy())
+        new_data = ImageData(data.name + f"_patch[{next(patch_counter)}]", data.image.copy(), None)
+        new_data.mask_images = data.mask_images.copy()
         if pos is None:
             # 如果没指定位置，则随机取点，取的点要保证能放下一个patch
             pos = (randint(0, new_data.shape[0] - self.shape[0]), randint(0, new_data.shape[1] - self.shape[1]))
@@ -178,19 +180,21 @@ class Patch:
         new_data.image[pos[0]:pos[0] + self.shape[0], pos[1]:pos[1] + self.shape[1], :] = self.image
         new_data.convert_polygons_to_images()
         # 把mask从小的变换到大坐标系中
+        new_mask_images = dict()
         empty_mask = numpy.zeros((data.image.shape[0], data.image.shape[1]), dtype="uint8")
         for mask_type in self.mask_images.keys():
+            new_mask_images[mask_type] = []
             for mask_index in range(len(self.mask_images[mask_type])):
                 cur_big_mask = empty_mask.copy()
                 cur_big_mask[pos[0]:pos[0] + self.shape[0], pos[1]:pos[1] + self.shape[1]] = \
                     self.mask_images[mask_type][mask_index]
-                self.mask_images[mask_type][mask_index] = cur_big_mask
+                new_mask_images[mask_type].append(cur_big_mask)
         # 把mask也贴到原图上
-        for mask_type in self.mask_images.keys():
+        for mask_type in new_mask_images.keys():
             if mask_type not in new_data.mask_images.keys():
-                new_data.mask_images[mask_type] = self.mask_images[mask_type]
+                new_data.mask_images[mask_type] = new_mask_images[mask_type]
             else:
-                new_data.mask_images[mask_type] += self.mask_images[mask_type]
+                new_data.mask_images[mask_type] += new_mask_images[mask_type]
         return new_data
 
     def drop_empty_masks(self):
