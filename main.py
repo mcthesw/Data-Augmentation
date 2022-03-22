@@ -71,13 +71,13 @@ if MODE == "AUG":
             patches = []
             # 初始化patches
             patches = Patch.load_from_folder(PATCH_PATH)
+            if len(patches) < PATCH_AMOUNT:
+                print("有效Patch数量小于PATCH_AMOUNT，无法执行该项数据增强")
+                break
             # 把Patch贴到每一张图上
             # TODO：提供更高可自定义程度的贴图
             # 如果新的贴图产生的ImageData中没有新增某一类型的细胞核，那么会导致重复，解决方法：只使用patched的图片
             for data_file in cur_data_list:
-                if len(patches) < PATCH_AMOUNT:
-                    print("有效Patch数量小于PATCH_AMOUNT，无法执行该项数据增强")
-                    break
                 cur_patches = random.sample(patches, PATCH_AMOUNT)
                 for i in cur_patches:
                     tmp = i.apply_to_image_data(data_file)
@@ -101,6 +101,8 @@ if MODE == "AUG":
         val_file.write(str([i for i in VALs]))
     print(f"VALs.txt 已经生成在了 {DataTarget} 下")
     print("所有处理均已完成")
+
+
 elif MODE == "CreatePatch":
     try:
         os.mkdir(PATCH_PATH)
@@ -111,7 +113,7 @@ elif MODE == "CreatePatch":
     time = time.strftime("%Y-%m-%d", time.localtime())
     cnt = 0
     for i in picFiles:
-        print(f"\n\n开始以该图片生成Patch: {i}")
+        print(f"开始以该图片生成Patch: {i}")
         # noinspection PyTypeChecker
         img: ImageData = ImageData.create_from_file(i, DataSource)
         cur_patches: List[Patch] = Patch.create_from_image_data(img, patch_size=PATCH_SIZE)

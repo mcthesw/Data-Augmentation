@@ -138,7 +138,10 @@ class Patch:
                 for mask in patch_masks[mask_type]:
                     cur_patch_masks[mask_type].append(mask[i])
             # TODO：删除非H的
-            results.append(Patch(cur_patch_image, cur_patch_masks))
+            cur_patch = Patch(cur_patch_image, cur_patch_masks)
+            if cur_patch.flag:
+                results.append(cur_patch)
+        if len(results) < 1: print(data.name, "没有h标签，没有生成任何Patch")
         return results
 
     @classmethod
@@ -151,10 +154,21 @@ class Patch:
         return result
 
     def __init__(self, image: numpy.ndarray, mask_images: dict):
+        self.flag = True
+        if "h" not in list(mask_images.keys()):
+            # 只需要h，要是没有就不生成贴图，返回False的Flag
+            self.flag = False
+            return
         self.image = image
         self.shape = image.shape[0:2]
+        self.types = ['h', ]
+        self.mask_images = dict()
+        self.mask_images['h'] = mask_images['h']
+        '''
         self.types = list(mask_images.keys())
         self.mask_images = mask_images
+        '''
+
         self.drop_empty_masks()
 
     def check_include_target(self) -> bool:
@@ -201,7 +215,6 @@ class Patch:
             pos = (randint(0, new_data.shape[0] - self.shape[0]), randint(0, new_data.shape[1] - self.shape[1]))
         # 把patch的图片覆盖到原图指定位置上
         new_data.image[pos[0]:pos[0] + self.shape[0], pos[1]:pos[1] + self.shape[1], :] = self.image
-        new_data.convert_polygons_to_images()
         # 把mask从小的变换到大坐标系中
         new_mask_images = dict()
         empty_mask = numpy.zeros((data.image.shape[0], data.image.shape[1]), dtype="uint8")
