@@ -13,12 +13,12 @@ from DataObj import ImageData, Patch
 MODE = "AUG"  # TODO:根据该项来输出 mode可为AUG,CreatePatch
 VAL_RATE = 1 / 10  # 随机产生的VAL列表应当占总文件的比例
 AUG = False  # 是否进行数据增强
-SPLIT = 0  # (384, 512)  # 将图片分割的大小，如果填写0或False则不进行分割
+SPLIT = (384, 512)  # 将图片分割的大小，如果填写0或False则不进行分割
 
 # PATCH 功能配置
 PATCH = True  # 是否进行贴图
 PATCH_SIZE = (128, 128)  # Patch的长宽
-PATCH_AMOUNT = 1  # 一张图上有几个Patch
+PATCH_AMOUNT = 2  # 一张图上有几个Patch
 PATCH_PATH = "Patches\\"
 
 # 基本数据源配置
@@ -80,8 +80,8 @@ if MODE == "AUG":
             for data_file in cur_data_list:
                 cur_patches = random.sample(patches, PATCH_AMOUNT)
                 for i in cur_patches:
-                    tmp = i.apply_to_image_data(data_file)
-                    AUG_list.append(tmp)
+                    data_file = i.apply_to_image_data(data_file)
+                AUG_list.append(data_file)
             cur_data_list = AUG_list
 
         data_file_list += [j.name for j in cur_data_list]
