@@ -1,6 +1,8 @@
 import os
+import pickle
 from os import path
 from random import randint
+from typing import List
 
 import numpy
 
@@ -8,10 +10,13 @@ from Utils import dump_mask, get_image, read_masks_from_json, write_image, get_m
 
 patch_counter = counter()
 
+
 class ImageData:
     @classmethod
     def create_from_file(cls, file_name: str, source_path: str):
-        """通过文件名和路径来获取数据，需要图片和同名json"""
+        """通过文件名和路径来获取数据，需要图片和同名json
+        :rtype: object
+        """
         file_path = path.join(source_path, file_name)  # 该文件的完整路径
         json_file = path.join(source_path, file_name[:-4] + ".json")
         image = get_image(file_path)
@@ -51,6 +56,10 @@ class ImageData:
         """把图片和mask按照格式导出到target_path"""
         assert self.mask_images is not None
         for mask_type in self.types:
+            if not self.mask_images[mask_type]:
+                print(f"文件 [{mask_type}]{self.name} 导出失败，原因是没有mask")
+                # 如果无mask，则不导出
+                continue
             # 把mask中的各个类别分别输出
             folder_name = f"[{mask_type}]" + self.name
             mask_folder_path = path.join(target_path, folder_name, "masks")
@@ -61,9 +70,9 @@ class ImageData:
                 cur_mask_name = str(index)
                 dump_mask(mask_folder_path, cur_mask_name, cur_mask)
             # 导出对应图片
-            image_path = path.join(target_path, folder_name, "images", self.name)
+            image_path = path.join(target_path, folder_name, "images")
             os.makedirs(image_path)
-            write_image(image_path, self.name, self.image)
+            write_image(image_path, f"[{mask_type}]" + self.name, self.image)
 
     def drop_empty_masks(self):
         """去掉空的mask"""
@@ -131,6 +140,15 @@ class Patch:
             results.append(Patch(cur_patch_image, cur_patch_masks))
         return results
 
+    @classmethod
+    def load_from_folder(cls, source_path: str):
+        result: List[cls] = []
+        file_names = os.listdir(source_path)
+        for name in file_names:
+            with open(path.join(source_path, name)) as file:
+                result.append(pickle.load(file))
+        return result
+
     def __init__(self, image: numpy.ndarray, mask_images: dict):
         self.image = image
         self.shape = image.shape[0:2]
@@ -147,6 +165,10 @@ class Patch:
                 return True
         else:
             return False
+
+    def save_to_file(self, target_path: str):
+        with open(target_path, mode="w") as file:
+            pickle.dump(self, file)
 
     def check_boundary(self) -> bool:
         """

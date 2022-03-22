@@ -3,23 +3,7 @@ import imgaug.augmenters as iaa
 
 import DataObj
 
-
-def aug_data(data: DataObj.ImageData) -> list:
-    result = []
-    augs = get_aug_seqs()
-    segmaps_aug = dict()
-    aug_cnt = 1
-    for aug in augs:
-        for cur_type in data.mask_polygons.keys():
-            cur_masks = [ia.Polygon(mask) for mask in data.mask_polygons[cur_type]]
-            images_aug, tmp_segmaps_aug = aug(image=data.image, polygons=cur_masks)
-            segmaps_aug[cur_type] = [i.coords for i in tmp_segmaps_aug]  # 把多边形转回坐标
-        assert images_aug is not None
-        result.append(DataObj.ImageData(data.name + f"_aug[{aug_cnt}]", images_aug, segmaps_aug))
-        aug_cnt += 1
-    return result
-
-
+'''
 def get_aug_seqs() -> list:
     sometimes = lambda aug: iaa.Sometimes(0.5, aug)
     return [
@@ -130,3 +114,70 @@ def get_aug_seqs() -> list:
             random_order=True
         ),
     ]
+'''
+
+
+def get_aug_seqs() -> list:
+    sometimes = lambda aug: iaa.Sometimes(0.5, aug)
+    return [
+        iaa.Sequential(
+            [
+                iaa.Affine(scale={"x": (0.8, 1.2), "y": (0.8, 1.2)},
+                           translate_percent={"x": (-0.2, 0.2), "y": (-0.2, 0.2)},
+                           rotate=(-45, 45),
+                           ),
+            ]),
+        iaa.Sequential(
+            [
+                iaa.Affine(scale={"x": (0.8, 1.2), "y": (0.8, 1.2)},
+                           translate_percent={"x": (-0.2, 0.2), "y": (-0.2, 0.2)},
+                           rotate=(-45, 45),
+                           ),
+                iaa.Add((-10, 10), per_channel=0.5),
+                iaa.GaussianBlur((0, 3.0)),
+            ]),
+        iaa.Sequential(
+            [
+                iaa.Affine(scale={"x": (0.8, 1.2), "y": (0.8, 1.2)},
+                           translate_percent={"x": (-0.2, 0.2), "y": (-0.2, 0.2)},
+                           rotate=(-45, 45),
+                           ),
+                iaa.OneOf([
+                    iaa.GaussianBlur((0, 3.0)),
+                    iaa.MedianBlur(k=(3, 11)),
+                    iaa.Add((-10, 10), per_channel=0.5),
+                ]),
+            ]),
+        iaa.Sequential(
+            [
+                iaa.Affine(scale={"x": (0.8, 1.2), "y": (0.8, 1.2)},
+                           translate_percent={"x": (-0.2, 0.2), "y": (-0.2, 0.2)},
+                           rotate=(-45, 45),
+                           ),
+                iaa.OneOf([
+                    iaa.GaussianBlur((0, 3.0)),
+                    iaa.AverageBlur(k=(2, 7)),
+                    iaa.MedianBlur(k=(3, 11)),
+                ]),
+                iaa.Multiply((0.5, 1.5), per_channel=0.5),
+            ])
+    ]
+
+
+augs = get_aug_seqs()  # 为了防止重新生成aug_seqs
+
+
+def aug_data(data: DataObj.ImageData) -> list:
+    result = []
+    global augs
+    segmaps_aug = dict()
+    aug_cnt = 1
+    for aug in augs:
+        for cur_type in data.mask_polygons.keys():
+            cur_masks = [ia.Polygon(mask) for mask in data.mask_polygons[cur_type]]
+            images_aug, tmp_segmaps_aug = aug(image=data.image, polygons=cur_masks)
+            segmaps_aug[cur_type] = [i.coords for i in tmp_segmaps_aug]  # 把多边形转回坐标
+        assert images_aug is not None
+        result.append(DataObj.ImageData(data.name + f"_aug[{aug_cnt}]", images_aug, segmaps_aug))
+        aug_cnt += 1
+    return result
