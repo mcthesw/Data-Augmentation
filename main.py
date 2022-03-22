@@ -10,13 +10,13 @@ from DataObj import ImageData, Patch
 
 # 配置部分
 # 注意：此处输入高和长的格式应为(高度, 长度)
-MODE = "CreatePatch"  # TODO:根据该项来输出 mode可为AUG,CreatePatch
+MODE = "AUG"  # TODO:根据该项来输出 mode可为AUG,CreatePatch
 VAL_RATE = 1 / 10  # 随机产生的VAL列表应当占总文件的比例
-AUG = True  # 是否进行数据增强
-SPLIT = (384, 512)  # 将图片分割的大小，如果填写0或False则不进行分割
+AUG = False  # 是否进行数据增强
+SPLIT = 0  # (384, 512)  # 将图片分割的大小，如果填写0或False则不进行分割
 
 # PATCH 功能配置
-PATCH = False  # 是否进行贴图
+PATCH = True  # 是否进行贴图
 PATCH_SIZE = (128, 128)  # Patch的长宽
 PATCH_AMOUNT = 1  # 一张图上有几个Patch
 PATCH_PATH = "Patches\\"
@@ -65,25 +65,16 @@ if MODE == "AUG":
                 AUG_list += j.split(SPLIT)
             cur_data_list = AUG_list
 
-        #  TODO:Patch功能暂时和优化后的代码冲突
-        '''
         if PATCH:
             print("开始进行贴图数据增强")
             AUG_list = []
             patches = []
-            cur_patches: List[Patch]
             # 初始化patches
-            for data_file in data_file_list:
-                cur_patches = Patch.create_from_image_data(data_file, patch_size=PATCH_SIZE)
-                for patch in cur_patches:
-                    # 如果未包含物体或者遇到了边界，那么抛弃
-                    if not patch.check_include_target() or not patch.check_boundary():
-                        continue
-                    patches.append(patch)
+            patches = Patch.load_from_folder(PATCH_PATH)
             # 把Patch贴到每一张图上
             # TODO：提供更高可自定义程度的贴图
             # 如果新的贴图产生的ImageData中没有新增某一类型的细胞核，那么会导致重复，解决方法：只使用patched的图片
-            for data_file in data_file_list:
+            for data_file in cur_data_list:
                 if len(patches) < PATCH_AMOUNT:
                     print("有效Patch数量小于PATCH_AMOUNT，无法执行该项数据增强")
                     break
@@ -91,8 +82,8 @@ if MODE == "AUG":
                 for i in cur_patches:
                     tmp = i.apply_to_image_data(data_file)
                     AUG_list.append(tmp)
-            data_file_list = AUG_list
-        '''
+            cur_data_list = AUG_list
+
         data_file_list += [j.name for j in cur_data_list]
         for j in cur_data_list:
             print(f"正在导出文件:\n{str(j)}")
