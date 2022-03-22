@@ -137,6 +137,7 @@ class Patch:
                 cur_patch_masks[mask_type] = list()
                 for mask in patch_masks[mask_type]:
                     cur_patch_masks[mask_type].append(mask[i])
+            # TODO：删除非H的
             results.append(Patch(cur_patch_image, cur_patch_masks))
         return results
 
@@ -145,14 +146,14 @@ class Patch:
         result: List[cls] = []
         file_names = os.listdir(source_path)
         for name in file_names:
-            with open(path.join(source_path, name)) as file:
+            with open(path.join(source_path, name), mode="rb") as file:
                 result.append(pickle.load(file))
         return result
 
     def __init__(self, image: numpy.ndarray, mask_images: dict):
         self.image = image
         self.shape = image.shape[0:2]
-        self.types = mask_images.keys()
+        self.types = list(mask_images.keys())
         self.mask_images = mask_images
         self.drop_empty_masks()
 
@@ -167,7 +168,7 @@ class Patch:
             return False
 
     def save_to_file(self, target_path: str):
-        with open(target_path, mode="w") as file:
+        with open(target_path, mode="wb") as file:
             pickle.dump(self, file)
 
     def check_boundary(self) -> bool:
