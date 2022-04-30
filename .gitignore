@@ -3,3 +3,6 @@ Target/
 Patches/
 测试集/
 DataSource.rar
+DataSource.bak
+__pycache__/
+Target1/

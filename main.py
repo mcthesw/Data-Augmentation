@@ -13,10 +13,10 @@ from DataObj import ImageData, Patch
 MODE = "AUG"  # TODO:根据该项来输出 mode可为AUG,CreatePatch
 VAL_RATE = 1 / 10  # 随机产生的VAL列表应当占总文件的比例
 AUG = False  # 是否进行数据增强
-SPLIT = (384, 512)  # 将图片分割的大小，如果填写0或False则不进行分割
+SPLIT = False  # (384, 512)  # 将图片分割的大小，如果填写0或False则不进行分割
 
 # PATCH 功能配置
-PATCH = True  # 是否进行贴图
+PATCH = False  # 是否进行贴图
 PATCH_SIZE = (128, 128)  # Patch的长宽
 PATCH_AMOUNT = 2  # 一张图上有几个Patch
 PATCH_PATH = "Patches\\"
@@ -32,7 +32,8 @@ print("读取文件成功")
 
 # 获取所有图片
 file: str
-picFiles = [file for file in files if re.fullmatch(r".*\.(jpg|png)$", file, re.I)]
+picFiles = \
+    [file for file in files if re.fullmatch(r".*\.(jpg|png)$", file, re.I)]
 print("读取所有源图片成功：")
 print("\n".join(picFiles))
 
@@ -116,7 +117,8 @@ elif MODE == "CreatePatch":
         print(f"开始以该图片生成Patch: {i}")
         # noinspection PyTypeChecker
         img: ImageData = ImageData.create_from_file(i, DataSource)
-        cur_patches: List[Patch] = Patch.create_from_image_data(img, patch_size=PATCH_SIZE)
+        cur_patches: List[Patch] = \
+            Patch.create_from_image_data(img, patch_size=PATCH_SIZE)
         for j in cur_patches:
             cnt += 1
             j.save_to_file(os.path.join(PATCH_PATH, time + f"_{cnt}.patch"))
