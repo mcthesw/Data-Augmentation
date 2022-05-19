@@ -54,8 +54,13 @@ class ImageData:
 
     def dump_masks_and_image(self, target_path: str):
         """把图片和mask按照格式导出到target_path"""
-        # TODO: 需要改善导出格式，以适应新的要求
         assert self.mask_images is not None
+        testarr = []
+        for mask_type in self.types:
+            testarr+= self.mask_images[mask_type]
+        if len(testarr)==0:
+            print(f"文件 {self.name} 导出失败，原因是没有mask")
+            return
 
         # 创建Mask和Image的文件夹
         folder_name = self.name

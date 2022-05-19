@@ -12,8 +12,8 @@ from DataObj import ImageData, Patch
 # 注意：此处输入高和长的格式应为(高度, 长度)
 MODE = "AUG"  # TODO:根据该项来输出 mode可为AUG,CreatePatch
 VAL_RATE = 1 / 10  # 随机产生的VAL列表应当占总文件的比例
-AUG = False  # 是否进行数据增强
-SPLIT = False  # (384, 512)  # 将图片分割的大小，如果填写0或False则不进行分割
+AUG = True  # 是否进行数据增强
+SPLIT = (384, 512)  # 将图片分割的大小，如果填写0或False则不进行分割
 
 # PATCH 功能配置
 PATCH = False  # 是否进行贴图
