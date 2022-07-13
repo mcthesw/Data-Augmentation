@@ -16,7 +16,7 @@ AUG = True  # 是否进行数据增强
 SPLIT = (384, 512)  # 将图片分割的大小，如果填写0或False则不进行分割
 
 # PATCH 功能配置
-PATCH = False  # 是否进行贴图
+PATCH = True  # 是否进行贴图
 PATCH_SIZE = (128, 128)  # Patch的长宽
 PATCH_AMOUNT = 2  # 一张图上有几个Patch
 PATCH_PATH = "Patches\\"
@@ -80,8 +80,8 @@ if MODE == "AUG":
             # 如果新的贴图产生的ImageData中没有新增某一类型的细胞核，那么会导致重复，解决方法：只使用patched的图片
             for data_file in cur_data_list:
                 cur_patches = random.sample(patches, PATCH_AMOUNT)
-                for i in cur_patches:
-                    data_file = i.apply_to_image_data(data_file)
+                for j in cur_patches:
+                    data_file = j.apply_to_image_data(data_file)
                 AUG_list.append(data_file)
             cur_data_list = AUG_list
 

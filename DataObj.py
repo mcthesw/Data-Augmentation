@@ -57,8 +57,8 @@ class ImageData:
         assert self.mask_images is not None
         testarr = []
         for mask_type in self.types:
-            testarr+= self.mask_images[mask_type]
-        if len(testarr)==0:
+            testarr += self.mask_images[mask_type]
+        if len(testarr) == 0:
             print(f"文件 {self.name} 导出失败，原因是没有mask")
             return
 
@@ -214,7 +214,7 @@ class Patch:
                         return False
         return True
 
-    def apply_to_image_data(self, data: ImageData, pos: tuple = None) -> ImageData:
+    def apply_to_image_data(self, data: ImageData, pos: tuple = None, delete_bg: bool = False) -> ImageData:
         # 因为需要把新的mask覆盖到旧的上面，所以旧的必须存在
         assert data.mask_images is not None
         # 需要使用copy来解决引用问题
@@ -224,7 +224,15 @@ class Patch:
             # 如果没指定位置，则随机取点，取的点要保证能放下一个patch
             pos = (randint(0, new_data.shape[0] - self.shape[0]), randint(0, new_data.shape[1] - self.shape[1]))
         # 把patch的图片覆盖到原图指定位置上
-        new_data.image[pos[0]:pos[0] + self.shape[0], pos[1]:pos[1] + self.shape[1], :] = self.image
+        if not delete_bg:
+            new_data.image[pos[0]:pos[0] + self.shape[0], pos[1]:pos[1] + self.shape[1], :] = self.image
+        else:
+            for mask in self.mask_images["h"]:
+                Xs, Ys = numpy.where(mask == 255)
+                for index in range(len(Xs)):
+                    x = Xs[index]
+                    y = Ys[index]
+                    new_data.image[pos[0] + x, pos[1] + y] = self.image[x, y]
         # 把mask从小的变换到大坐标系中
         new_mask_images = dict()
         empty_mask = numpy.zeros((data.image.shape[0], data.image.shape[1]), dtype="uint8")
@@ -271,4 +279,5 @@ def split_mask(mask: numpy.ndarray, size: tuple) -> list:
                            x:x + size[0],
                            y:y + size[1]
                            ])
+
     return patches
