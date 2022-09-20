@@ -4,6 +4,9 @@
     <content url="file://$MODULE_DIR$">
       <excludeFolder url="file://$MODULE_DIR$/DataSource" />
       <excludeFolder url="file://$MODULE_DIR$/Target" />
+      <excludeFolder url="file://$MODULE_DIR$/Patches" />
+      <excludeFolder url="file://$MODULE_DIR$/Target1" />
+      <excludeFolder url="file://$MODULE_DIR$/测试集" />
     </content>
     <orderEntry type="jdk" jdkName="Python 3.7 (DataConvert)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
