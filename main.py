@@ -3,7 +3,6 @@ import os
 import random
 import re
 import time
-from typing import List
 
 from DataAug import aug_data
 from DataObj import ImageData, Patch
@@ -14,6 +13,7 @@ MODE = "AUG"  # 根据该项来输出 mode可为AUG,CreatePatch
 VAL_RATE = 1 / 10  # 随机产生的VAL列表应当占总文件的比例
 AUG = False  # 是否进行数据增强
 SPLIT = (384, 512)  # 将图片分割的大小，如果填写0或False则不进行分割
+assert MODE in ("AUG", "CreatePatch")
 
 # PATCH 功能配置
 PATCH = True  # 是否进行贴图
@@ -21,11 +21,12 @@ PATCH = True  # 是否进行贴图
 PATCH_SIZE = (128, 128)  # Patch的长宽
 PATCH_AMOUNT = 2  # 一张图上有几个Patch
 PATCH_PATH = "Patches\\"
+PATCH_MODE = "SEAMLESS"
+assert PATCH_MODE in ("NORMAL", "SEAMLESS")
 
 # 基本数据源配置
 DataSource = "DataSource\\"  # 数据源
 DataTarget = "Target\\"  # 输出路径
-assert MODE in ["AUG", "CreatePatch"]
 # 配置部分结束
 
 files = os.listdir(DataSource)
@@ -45,11 +46,11 @@ if MODE == "AUG":
     try:
         os.mkdir(DataTarget)
     except FileExistsError:
-        input("文件夹已存在，请删除Target文件夹，按任意键结束程序")
+        print("文件夹已存在，请删除Target文件夹，按任意键结束程序")
         exit()
     for i in picFiles:
         print(f"\n\n开始处理图片: {i}")
-        cur_data = ImageData.create_from_file(i, DataSource)
+        cur_data: ImageData = ImageData.create_from_file(i, DataSource)
         cur_data_list = [cur_data, ]
 
         if AUG:
@@ -70,7 +71,6 @@ if MODE == "AUG":
         if PATCH:
             print("开始进行贴图数据增强")
             AUG_list = []
-            patches = []
             # 初始化patches
             patches = Patch.load_from_folder(PATCH_PATH)
             if len(patches) < PATCH_AMOUNT:
@@ -82,7 +82,7 @@ if MODE == "AUG":
             for data_file in cur_data_list:
                 cur_patches = random.sample(patches, PATCH_AMOUNT)
                 for j in cur_patches:
-                    data_file = j.apply_to_image_data(data_file)
+                    data_file = j.apply_to_image_data(data_file, mode=PATCH_MODE)
                 AUG_list.append(data_file)
             cur_data_list = AUG_list
 
@@ -118,7 +118,7 @@ elif MODE == "CreatePatch":
         print(f"开始以该图片生成Patch: {i}")
         # noinspection PyTypeChecker
         img: ImageData = ImageData.create_from_file(i, DataSource)
-        cur_patches: List[Patch] = \
+        cur_patches: list[Patch] = \
             Patch.create_from_image_data(img, patch_size=PATCH_SIZE)
         for j in cur_patches:
             cnt += 1

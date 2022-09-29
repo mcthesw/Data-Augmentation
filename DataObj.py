@@ -2,8 +2,8 @@ import os
 import pickle
 from os import path
 from random import randint
-from typing import List
 
+import cv2
 import numpy
 
 from Utils import dump_mask, get_image, read_masks_from_json, write_image, get_mask, counter
@@ -15,15 +15,15 @@ class ImageData:
     @classmethod
     def create_from_file(cls, file_name: str, source_path: str):
         """通过文件名和路径来获取数据，需要图片和同名json
-        :rtype: object
+        :rtype: ImageData
         """
         file_path = path.join(source_path, file_name)  # 该文件的完整路径
         json_file = path.join(source_path, file_name[:-4] + ".json")
         image = get_image(file_path)
         masks = read_masks_from_json(json_file)
-        return cls(file_name[:-4], image, masks)
+        return ImageData(file_name[:-4], image, masks)
 
-    def __init__(self, file_name: str, image: numpy.ndarray, mask_polygons: dict):
+    def __init__(self, file_name: str, image: numpy.ndarray, mask_polygons: dict | None):
         # noinspection PyTypeChecker
         self.mask_images: dict = None
         self.name = file_name  # 这个是用于保存的ID
@@ -156,7 +156,7 @@ class Patch:
 
     @classmethod
     def load_from_folder(cls, source_path: str):
-        result: List[cls] = []
+        result: list[cls] = []
         file_names = os.listdir(source_path)
         for name in file_names:
             with open(path.join(source_path, name), mode="rb") as file:
@@ -214,15 +214,63 @@ class Patch:
                         return False
         return True
 
-    def apply_to_image_data(self, data: ImageData, pos: tuple = None, delete_bg: bool = False) -> ImageData:
+    def apply_to_image_data(self, data: ImageData, pos: tuple = None, delete_bg: bool = False,
+                            mode="NORMAL") -> ImageData:
         # 因为需要把新的mask覆盖到旧的上面，所以旧的必须存在
         assert data.mask_images is not None
+        if mode == "NORMAL":
+            return self.apply_to_image_data_normal(data, pos, delete_bg)
+        elif mode == "SEAMLESS":
+            assert delete_bg == False, "在无缝模式下，不能去除背景"
+            return self.apply_to_image_data_seamless(data, pos, delete_bg)
+        else:
+            raise "无效的贴图方式"
+
+    def apply_to_image_data_seamless(self, data: ImageData, pos: tuple = None, delete_bg: bool = False) -> ImageData:
+        # TODO:完成这种贴图方式
         # 需要使用copy来解决引用问题
         new_data = ImageData(data.name + f"_patch[{next(patch_counter)}]", data.image.copy(), None)
         new_data.mask_images = data.mask_images.copy()
         if pos is None:
             # 如果没指定位置，则随机取点，取的点要保证能放下一个patch
-            pos = (randint(0, new_data.shape[0] - self.shape[0]), randint(0, new_data.shape[1] - self.shape[1]))
+            pos = (randint(0, new_data.shape[0] - self.shape[0]),
+                   randint(0, new_data.shape[1] - self.shape[1]))
+        # 把patch的图片覆盖到原图指定位置上
+        patch_mask = numpy.ones_like(self.image) * 255
+        new_data.image = cv2.seamlessClone(
+            self.image,
+            new_data.image,
+            patch_mask,
+            (pos[1] + self.shape[1] // 2, pos[0] + self.shape[0] // 2),
+            cv2.MIXED_CLONE
+        )
+        # new_data.image[pos[0]:pos[0] + self.shape[0], pos[1]:pos[1] + self.shape[1], :] = self.image
+        # 把mask从小的变换到大坐标系中
+        new_mask_images = dict()
+        empty_mask = numpy.zeros((data.image.shape[0], data.image.shape[1]), dtype="uint8")
+        for mask_type in self.mask_images.keys():
+            new_mask_images[mask_type] = []
+            for mask_index in range(len(self.mask_images[mask_type])):
+                cur_big_mask = empty_mask.copy()
+                # cur_big_mask[pos[0]:pos[0] + self.shape[0], pos[1]:pos[1] + self.shape[1]] = \
+                #    self.mask_images[mask_type][mask_index]
+                new_mask_images[mask_type].append(cur_big_mask)
+        # 把mask也贴到原图上
+        for mask_type in new_mask_images.keys():
+            if mask_type not in new_data.mask_images.keys():
+                new_data.mask_images[mask_type] = new_mask_images[mask_type]
+            else:
+                new_data.mask_images[mask_type] += new_mask_images[mask_type]
+        return new_data
+
+    def apply_to_image_data_normal(self, data: ImageData, pos: tuple = None, delete_bg: bool = False) -> ImageData:
+        # 需要使用copy来解决引用问题
+        new_data = ImageData(data.name + f"_patch[{next(patch_counter)}]", data.image.copy(), None)
+        new_data.mask_images = data.mask_images.copy()
+        if pos is None:
+            # 如果没指定位置，则随机取点，取的点要保证能放下一个patch
+            pos = (randint(0, new_data.shape[0] - self.shape[0]),
+                   randint(0, new_data.shape[1] - self.shape[1]))
         # 把patch的图片覆盖到原图指定位置上
         if not delete_bg:
             new_data.image[pos[0]:pos[0] + self.shape[0], pos[1]:pos[1] + self.shape[1], :] = self.image
